@@ -1,0 +1,14 @@
+#!/bin/bash
+FILEPATH_WITHOUT_EXT="${1%.*}"
+
+# Upload video file
+rclone moveto --no-traverse "$1" "vtuber:/${1##${2}}"
+
+# Upload else files
+declare -a exts
+exts=( "log" "jpg" "json")
+
+for i in "${exts[@]}"; do
+  tmp="${FILEPATH_WITHOUT_EXT}.${i}"
+  rclone moveto --no-traverse "${tmp}" "vtuber:/${tmp##${2}}"
+done
