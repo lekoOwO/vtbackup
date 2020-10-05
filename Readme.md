@@ -2,6 +2,20 @@
 
 This project contains all scripts you need to automatically grab live streams from several channels.
 
+Highlights:
+
+1. Auto download live streams when it starts
+
+2. Callback function. Allowing to upload to GDrive, OneDrive...(rclone supported) after videos are downloaded.
+
+3. Address Pool to prevent HTTP 429 error from Youtube.
+
+4. Using a light-weight Alpine Linux!
+
+5. Telegram notification
+
+6. Monitored channels are easy to be added
+
 ## Requirements
 
 - Alpine Linux
@@ -19,31 +33,36 @@ Install all dependencies by running `sh /root/init.sh`.
 
 ## Config
 
-### Config live-dl
+### 1. Config live-dl
 
 Config live-dl.
+
 My config is put at `/root/example/config.example.yml` for reference.
+
 Confidential info is masked with `*`
 
-### IPv6 Pool
+### 2. IPv6 Pool
 
 It's recommended to config a IPv6 Pool to prevent Youtube HTTP 429 error.
 
 Make sure that you are in a SLAAC (IPv6 stateless) environment.
 
-#### Config script
+#### 2.a Config script
 
 fill prefix in `/root/ipv6/ipv6.bash` and make it executable.
 
 It's using `${PREFIX}::1` to `${PREFIX}::fff` by default, change it if you want (just modify the for-loop part, easy.)
 
-#### Config live-dl
+#### 2.b Config live-dl
 
-`address_pool: true` and `address_pool_file: /root/ipv6/address.txt`
+```
+address_pool: true
+address_pool_file: /root/ipv6/address.txt
+```
 
-### Callback
+### 3. Callback
 
-##### Config live-dl
+#### 3.a Config live-dl
 
 ```
 run_callback: true
@@ -51,9 +70,7 @@ callback:
   executable: /root/callback
 ```
 
-#### A. Using lekoOwO's script
-
-##### Init
+#### 3.b1 Using lekoOwO's script
 
 Download rclone and config your storage as `vtuber:/`
 
@@ -61,7 +78,7 @@ move `/root/example/callback.bash.example` to `/root/callback` and make it execu
 
 Downloaded video will be uploaded to your cloud storage and deleted locally.
 
-#### B. Use your own solution
+#### 3.b2 Use your own solution
 
 Write your own callback script, yay!
 
@@ -69,15 +86,15 @@ Write your own callback script, yay!
 
 Save your callback script to `/root/callback` and make it executable.
 
-### Telegram Notification
+### 4. Telegram Notification
 
 This part helps you to know whether you are 429ed by receiving messages on a telegram channel every 15 minutes.
 
-#### isBanned.bash
+#### 4.a isBanned.bash
 
 Fill your `CHANNEL_ID`, `CHAT_ID`, `BOT_TOKEN` in.
 
-#### Make it run every 15 minutes
+#### 4.b Make it run every 15 minutes
 
 ```
 cd /etc/periodic/15min/
@@ -86,16 +103,16 @@ mv ./isBanned.bash ./isBanned
 chmod +x ./isBanned
 ```
 
-##### Enable crontab
+##### 4.b.1 Enable crontab
 `rc-service crond start && rc-update add crond default`
 
-### Startup script 
+### 5. Startup script 
 
 remove L3 (The IPv6 line) from `/root/start.bash` if you didn't use IPv6 Pool.
 
 Make it executable.
 
-#### Make in run at boot
+#### 5.a Make in run at boot
 
 ```
 rc-update add local default
