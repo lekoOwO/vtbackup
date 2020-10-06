@@ -23,6 +23,7 @@ config:
   skip_telegram: false
   run_callback: true
   address_pool: true
+  image_proxy: false
   one_time: false
   timezone: Asia/Taipei
   email_provider: ses
