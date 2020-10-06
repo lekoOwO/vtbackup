@@ -121,3 +121,9 @@ ln /root/start.bash
 mv ./start.bash ./live-dl.start
 chmod +x ./live-dl.start
 ```
+
+### 6. Add monitored channel
+
+`/root/add_channel.sh` is a convinient script to add a monitored channel!
+
+Don't forget to edit it (`DEFAULT_TELEGRAM_CHANNEL_ID`)!
