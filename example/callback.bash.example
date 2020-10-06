@@ -1,6 +1,8 @@
 #!/bin/bash
 FILEPATH_WITHOUT_EXT="${1%.*}"
 
+touch "${FILEPATH_WITHOUT_EXT}.finished"
+
 # Upload video file
 rclone moveto --no-traverse "$1" "vtuber:/${1##${2}}"
 
