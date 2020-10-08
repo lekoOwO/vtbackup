@@ -13,5 +13,10 @@ exts=( "log" "jpg" "json")
 
 for i in "${exts[@]}"; do
   tmp="${FILEPATH_WITHOUT_EXT}.${i}"
-  rclone moveto --no-traverse "${tmp}" "vtuber:/${FILENAME_WITHOUT_EXT}/${tmp##${2}}"
+
+  output="${tmp##${2}}"
+  output_folder=$(dirname "$output")
+  output_filename=$(basename "$output")
+
+  rclone moveto --no-traverse "${tmp}" "vtuber:/${output_folder}/${FILENAME_WITHOUT_EXT}/${output_filename}"
 done
