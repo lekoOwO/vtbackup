@@ -1,5 +1,6 @@
 #!/bin/bash
 FILEPATH_WITHOUT_EXT="${1%.*}"
+FILENAME_WITHOUT_EXT=$(basename "$FILEPATH_WITHOUT_EXT")
 
 touch "${FILEPATH_WITHOUT_EXT}.finished"
 
@@ -12,5 +13,5 @@ exts=( "log" "jpg" "json")
 
 for i in "${exts[@]}"; do
   tmp="${FILEPATH_WITHOUT_EXT}.${i}"
-  rclone moveto --no-traverse "${tmp}" "vtuber:/${tmp##${2}}"
+  rclone moveto --no-traverse "${tmp}" "vtuber:/${FILENAME_WITHOUT_EXT}/${tmp##${2}}"
 done
