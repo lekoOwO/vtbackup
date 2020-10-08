@@ -5,7 +5,10 @@ FILENAME_WITHOUT_EXT=$(basename "$FILEPATH_WITHOUT_EXT")
 touch "${FILEPATH_WITHOUT_EXT}.finished"
 
 # Upload video file
-rclone moveto --no-traverse "$1" "vtuber:/${1##${2}}"
+output="${1##${2}}"
+output_folder=$(dirname "$output")
+output_filename=$(basename "$output")
+rclone moveto --no-traverse "$1" "vtuber:/${output_folder}/${FILENAME_WITHOUT_EXT}/${output_filename}"
 
 # Upload else files
 declare -a exts
