@@ -6,13 +6,13 @@ BOT_TOKEN="" # Telegram Bot token.
 
 ip=$(shuf -n 1 "${ADDRESS_POOL}")
 
-result=`curl -sI --interface $ip "https://www.youtube.com/channel/$CHANNEL_ID/live" | tac | tac | head -n 1`
-result=($result)
-result=${result[1]} # HTTP Status Code
+USER_AGENT="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36"
+
+result=`curl -sIL -X GET --compressed -H "User-Agent: $USER_AGENT" --interface $ip "https://www.youtube.com/channel/$CHANNEL_ID/live" | tac | tac | head -n 1 | grep -o '\d\d\d'`
 
 # Send to Telegram
 if [ "$result" != "200" ]; then
-  status="BANNED"
+  status="BANNED - $result"
   disable_notification="false"
 else
   status="OK"
