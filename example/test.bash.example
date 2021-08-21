@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Look at channels.bash.example
+. /root/scripts/channels.bash
+
+LIVE_DL_PATH="/root/live-dl/live-dl"
+
+for name in "${CHANNEL_IDS_SORTED[@]}"; do
+  id="${CHANNEL_IDS[${name}]}"    
+   
+  count=$(ps aux | grep "$id" | grep "$LIVE_DL_PATH" | wc -l)
+  if [ $count -eq "0" ]; then
+    status="❌"
+  else
+    status=""
+    if [[ $(ps aux | grep "$name" | grep "streamlink" | wc -l) -ne "0" ]] || \
+       [[ $(ps aux | grep "$name" | grep "ytarchive" | wc -l) -ne "0" ]]; then
+      status="🔴"
+    elif [ $(ps aux | grep "$name" | grep "ffmpeg" | wc -l) -ne "0" ]; then
+      status="🔄"
+    elif [ $(ps aux | grep "$name" | grep "rclone" | wc -l) -ne "0" ]; then
+      status="📤"
+    else
+      status="✅"
+    fi
+  fi
+  echo "${status}${name}"
+done

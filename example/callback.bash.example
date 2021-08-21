@@ -1,25 +1,139 @@
 #!/bin/bash
+
+# Telegram bot
+CHAT_ID="YOUR_CHAT_ID"
+BOT_TOKEN="BOT_TOKEN"
+
+# Monkey Patch for stupid ytarchive bug
+ytarchive_bug_path="/tmp/ytarchive${1}"
+if [[ -f "$ytarchive_bug_path" ]]; then
+    mv "$ytarchive_bug_path" "$1"
+fi
+# Monkey Patch end
+
 FILEPATH_WITHOUT_EXT="${1%.*}"
 FILENAME_WITHOUT_EXT=$(basename "$FILEPATH_WITHOUT_EXT")
 
-touch "${FILEPATH_WITHOUT_EXT}.finished"
-
-# Upload video file
-output="${1##${2}}"
-output_folder=$(dirname "$output")
-output_filename=$(basename "$output")
-rclone moveto --no-traverse "$1" "vtuber:/${output_folder}/${FILENAME_WITHOUT_EXT}/${output_filename}"
-
-# Upload else files
 declare -a exts
 exts=( "log" "jpg" "json")
 
-for i in "${exts[@]}"; do
-  tmp="${FILEPATH_WITHOUT_EXT}.${i}"
+# Create .finished file.
+touch "${FILEPATH_WITHOUT_EXT}.finished"
 
-  output="${tmp##${2}}"
-  output_folder=$(dirname "$output")
-  output_filename=$(basename "$output")
+# ----- Evalulate variables ----- #
 
-  rclone moveto --no-traverse "${tmp}" "vtuber:/${output_folder}/${FILENAME_WITHOUT_EXT}/${output_filename}"
-done
+video_file="$1"
+base_dir="$2"
+video_id="$3"
+channel_name="$5"
+photoUrl="$7"
+
+output="${video_file##${base_dir}}"
+output_folder=$(dirname "$output")
+output_filename=$(basename "$output")
+
+# Get segments
+# # streamlink
+# first_segment=$(cat "${FILEPATH_WITHOUT_EXT}.log" 2>/dev/null | grep -oP 'Adding segment \K\d+(?= to queue)' 2>/dev/null | head -n 1)
+# last_segment=$(cat "${FILEPATH_WITHOUT_EXT}.log" | grep -oP 'Adding segment \K\d+(?= to queue)' | tail -n 1)
+# segments="${first_segment} ~ ${last_segment}"
+
+# ytarchive
+segments=$(cat "${FILEPATH_WITHOUT_EXT}.log" | grep -oP 'Video fragments: \K(\d+)' | tail -n 1)
+
+# ----- Evalulate variables END ----- #
+
+function upload {
+    local drive="$1"
+    local excludeExt="$2"
+
+    for i in "${exts[@]}"; do
+        if [[ "$excludeExt" = "$i" ]]; then
+            continue
+        fi
+        local_file="${FILEPATH_WITHOUT_EXT}.${i}"
+        
+        _output="${local_file##${base_dir}}"
+        _output_folder=$(dirname "${_output}")
+        _output_filename=$(basename "${_output}")
+
+        rclone copyto --no-traverse "${local_file}" "${drive}:/${_output_folder}/${FILENAME_WITHOUT_EXT}/${_output_filename}"
+    done
+    
+    rclone copyto --no-traverse "${video_file}" "${drive}:/${output_folder}/${FILENAME_WITHOUT_EXT}/${output_filename}"
+}
+
+function clearFile {
+    for i in "${exts[@]}"; do
+        rm -rf "${FILEPATH_WITHOUT_EXT}.${i}"
+    done
+
+    rm -rf "${video_file}"
+}
+
+function getDuration {
+    local seconds=`ffmpeg -i "${video_file}" 2>&1 | awk '/Duration/ {split($2,a,":");print a[1]*3600+a[2]*60+a[3]}'`
+    local result=`date -d@$seconds -u +%H:%M:%S`
+
+    echo "$result"
+}
+
+# ----- Post variable evaluation ----- #
+
+duration=`getDuration`
+
+# ----- Post variable evaluation END ----- #
+
+# ----- Jobs ----- #
+
+# Upload to cloud.
+upload "MyCloudDriveA"
+
+# Upload to cloud, ignoring .log files.
+upload "MyCloudDriveB" "log"
+
+# Get file link
+link=`rclone link "MyCloudDriveB:/${output_folder}/${FILENAME_WITHOUT_EXT}"`
+
+# Log to TG
+tg_type="sendPhoto"
+tg_body='{
+    "chat_id": "'"$CHAT_ID"'",
+    "photo": "'"$photoUrl"'",
+    "caption": "'"${output_folder}"'\n\n\`'"${FILENAME_WITHOUT_EXT}"'\`\n\nSegment: '"${segments}"'\nDuration: '"${duration}"'\n\n*UPLOADED*",
+    "parse_mode": "Markdown",
+    "reply_markup": {
+        "inline_keyboard": [
+            [
+              {"text": "Google Drive", "url": "'"$link"'"},
+              {"text": "YouTube Video", "url": "https://www.youtube.com/watch?v='"$video_id"'"}
+            ]
+        ]
+    }
+}'
+curl \
+  -4 \
+  --connect-timeout 5 \
+  --max-time 10 \
+  --retry 5 \
+  --retry-delay 0 \
+  --retry-max-time 40 \
+  -s \
+  -X POST \
+  -H 'Content-Type: application/json' \
+  -d "${tg_body}" \
+  "https://api.telegram.org/bot${BOT_TOKEN}/${tg_type}" \ 
+> /dev/null &
+
+# Upload if channel name contains "牧野白", ignoring .log files.
+if [[ "$channel_name" =~ "牧野白"  ]]; then
+    upload "MyCloudDriveC" "log" &
+fi
+
+# Wait for upload to finish
+wait
+
+# Clear up.
+clearFile
+
+# ----- Jobs END ----- #

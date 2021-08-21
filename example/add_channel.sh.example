@@ -1,0 +1,14 @@
+#!/bin/sh
+TELEGRAM_CHANNEL_ID="CHANNEL_ID"
+
+read -p 'Channel Name: ' name
+read -p 'Channel ID: ' channel_id
+
+sed -i "/CHANNEL_IDS=(/a \\ \\ [\"$name\"]=\"$channel_id\"" /root/scripts/channels.bash
+
+cat >> /root/live-dl/config.yml <<EOL
+
+  - name: ${name}
+    youtube: https://www.youtube.com/channel/${channel_id}
+    telegram: ${TELEGRAM_CHANNEL_ID}
+EOL

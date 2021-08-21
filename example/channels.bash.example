@@ -1,0 +1,9 @@
+#!/bin/bash
+
+declare -A CHANNEL_IDS
+CHANNEL_IDS=(
+  ["Makino Shiro Ch. 牧野白"]="UCbZcxNKrC0a6IZYBowvzAUg"
+  ["Gawr Gura Ch. hololive-EN"]="UCoSrY_IQQVpmIRZ9Xf-y93g"
+)
+
+mapfile -d '' CHANNEL_IDS_SORTED < <(printf '%s\0' "${!CHANNEL_IDS[@]}" | sort -z)

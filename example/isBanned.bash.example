@@ -1,0 +1,82 @@
+#!/bin/bash
+CHANNEL_ID="TEST_YOUTUBE_CHANNEL_ID"
+ADDRESS_POOL="/root/ipv6/address.txt"
+CHAT_ID="SUCCESS_CHANNEL_ID"
+FAILED_CHAT_ID="FAILED_CHAT_ID"
+BOT_TOKEN="BOT_TOKEN"
+
+# Look at test.bash.example
+TEST_SCRIPT_PATH="/root/scripts/test.bash"
+
+chatId="${CHAT_ID}"
+
+ip=$(shuf -n 1 "${ADDRESS_POOL}")
+
+USER_AGENT="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36"
+
+# Check the internet connection.
+echo "Checking the internet..."
+echo "Using IP: ${ip}"
+
+ping -6 -I "${ip}" -c1 "google.com" 1>/dev/null 2>/dev/null
+SUCCESS=$?
+if [ $SUCCESS -eq "0" ]; then
+  echo "Internet is OK."
+else
+  echo "Internet Failed."
+  echo "Try using SLAAC IP..."
+  ping -6 -I "$SLAAC_IP" -c1 "google.com" 1>/dev/null 2>/dev/null
+  SUCCESS=$?
+  if [ $SUCCESS -eq "0" ]; then
+    echo "SLAAC Success."
+    
+    echo "Retrying original IP."
+    ping -6 -I "$ip" -c1 "google.com" 1>/dev/null 2>/dev/null
+    SUCCESS=$?
+    if [ $SUCCESS -eq "0" ]; then
+      echo "Internet is OK."
+    else
+      status="INTERNET FAILED - SLAAC SUCCESS"
+      chatId="${FAILED_CHAT_ID}"
+    fi
+  else
+    status="INTERNET FAILED - SLAAC FAILED"
+    chatId="${FAILED_CHAT_ID}"
+  fi
+fi
+
+echo "Checking if Youtube blocked us..."
+result=`curl -sIL -X GET --compressed -H "User-Agent: $USER_AGENT" --interface $ip \
+"https://www.youtube.com/channel/$CHANNEL_ID/live" | tac | tac | head -n 1 | cut -d ' ' -f2`
+
+isBanned="false"
+# Send to Telegram
+if [ ${#status} -eq "0" ]; then
+  if [ "$result" != "200" ]; then
+    status="**BANNED** - ${result}"
+    disable_notification="false"
+    isBanned="true"
+    chatId="${FAILED_CHAT_ID}"
+  else
+    status="OK"
+    disable_notification="true"
+  fi
+fi
+echo "status: $status"
+
+echo "Checking live-dl status..."
+liveDlResult="$(/bin/bash $TEST_SCRIPT_PATH)"
+echo "$liveDlResult"
+
+tg_body_text="IP Status: $status\nIP: \`$ip\`\n\n\`${liveDlResult}\`"
+
+tg_type="sendMessage"
+tg_body='{
+    "chat_id": "'"${chatId}"'",
+    "text": "'"${tg_body_text}"'",
+    "disable_notification": "'"$disable_notification"'",
+    "parse_mode": "Markdown"
+  }'
+
+
+curl -4 -s -X POST -H 'Content-Type: application/json' -d "$tg_body" "https://api.telegram.org/bot$BOT_TOKEN/$tg_type" > /dev/null &

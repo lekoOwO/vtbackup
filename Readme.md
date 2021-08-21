@@ -29,17 +29,13 @@ Run `git clone --recursive https://github.com/lekoOwO/vtbackup .` on `/root`
 
 ## Init
 
-Install all dependencies by running `sh /root/init.sh`.
+Install all dependencies by running `sh /root/scripts/live-dl.init.sh`.
 
 ## Config
 
 ### 1. Config live-dl
 
-Config live-dl.
-
-My config is put at `/root/example/config.example.yml` for reference.
-
-Confidential info is masked with `*`
+Config live-dl with its example config file.
 
 ### 2. IPv6 Pool
 
@@ -49,9 +45,9 @@ Make sure that you are in a SLAAC (IPv6 stateless) environment.
 
 #### 2.a Config script
 
-fill prefix in `/root/ipv6/ipv6.bash` and make it executable.
+fill `PREFIX`, `DEV`, `CIDR` in `/root/ipv6/ipv6.bash` and make it executable.
 
-It's using `${PREFIX}::1` to `${PREFIX}::fff` by default, change it if you want (just modify the for-loop part, easy.)
+It's using `${PREFIX}${SUFFIX}::1` to `${PREFIX}${SUFFIX}::ff` by default, change it if you want (just modify the for-loop part, easy.)
 
 #### 2.b Config live-dl
 
@@ -67,14 +63,14 @@ address_pool_file: /root/ipv6/address.txt
 ```
 run_callback: true
 callback:
-  executable: /root/callback
+  executable: /root/scripts/callback.bash
 ```
 
 #### 3.b1 Using lekoOwO's script
 
-Download rclone and config your storage as `vtuber:/`
+Download rclone and config your storage.
 
-move `/root/example/callback.bash.example` to `/root/callback` and make it executable.
+A example callback file is provided, modify it to meet your need :D
 
 Downloaded video will be uploaded to your cloud storage and deleted locally.
 
@@ -84,21 +80,33 @@ Write your own callback script, yay!
 
 `EXECUTABLE "${OUTPUT_PATH}.mp4" "$BASE_DIR/" $VIDEO_ID $FULLTITLE $UPLOADER $UPLOAD_DATE` will be called after the video is downloaded.
 
-Save your callback script to `/root/callback` and make it executable.
+Save your callback script to `/root/scripts/callback.bash` and make it executable.
 
-### 4. Telegram Notification
+### 4. YTArchive
 
-This part helps you to know whether you are 429ed by receiving messages on a telegram channel every 15 minutes.
+[YTArchive](https://github.com/Kethsar/ytarchive) is a convinient script to archive youtube videos.
 
-#### 4.a isBanned.bash
+`config.yml`
+```
+use_ytarchive: true
+ytarchive:
+    executable: YTARCHIVE_PY_LOCATION
+    cookie: YOUR_COOKIE_TXT
+```
+
+### 5. Telegram Notification
+
+This part helps you to know whether you are 429ed by receiving messages on a telegram channel every x minutes.
+
+#### 5.a isBanned.bash
 
 Fill your `CHANNEL_ID`, `CHAT_ID`, `BOT_TOKEN` in.
 
-#### 4.b Make it run every 15 minutes
+#### 5.b Make it run every 15 minutes
 
 ```
 cd /etc/periodic/15min/
-ln /root/isBanned.bash
+ln /root/scripts/isBanned.bash
 mv ./isBanned.bash ./isBanned
 chmod +x ./isBanned
 ```
@@ -106,13 +114,13 @@ chmod +x ./isBanned
 ##### 4.b.1 Enable crontab
 `rc-service crond start && rc-update add crond default`
 
-### 5. Startup script 
+### 6. Startup script 
 
-remove L3 (The IPv6 line) from `/root/start.bash` if you didn't use IPv6 Pool.
+Look at `start.bash.example`.
 
 Make it executable.
 
-#### 5.a Make in run at boot
+#### 6.a Make in run at boot
 
 ```
 rc-update add local default
@@ -122,8 +130,8 @@ mv ./start.bash ./live-dl.start
 chmod +x ./live-dl.start
 ```
 
-### 6. Add monitored channel
+### 7. Add monitored channel
 
-`/root/add_channel.sh` is a convinient script to add a monitored channel!
+`add_channel.sh` is a convinient script to add a monitored channel!
 
 Don't forget to edit it (`DEFAULT_TELEGRAM_CHANNEL_ID`)!
