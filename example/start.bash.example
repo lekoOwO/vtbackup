@@ -7,8 +7,7 @@
 mkdir -p /tmp/live-dl
 
 for key in "${!CHANNEL_IDS[@]}"; do
-    # Look at live-dl-gen.example
-    /usr/bin/nohup /bin/bash /root/scripts/live-dl-gen "https://www.youtube.com/channel/${CHANNEL_IDS[${key}]}" &> "/tmp/live-dl/${key}.log" &
+    PM2_HOME='/root/.pm2' pm2 start /bin/bash --name "$key" -- /root/live-dl/live-dl "https://www.youtube.com/channel/${CHANNEL_IDS[${key}]}"
 done
 
 /root/scripts/isBanned.bash &

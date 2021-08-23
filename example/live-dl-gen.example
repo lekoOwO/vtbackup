@@ -1,6 +1,0 @@
-#!/bin/bash
-
-# Or replace w/ any monitor app like supervisord/pm2 etc.
-while true; do
-  /bin/bash /root/live-dl/live-dl "$@"
-done
